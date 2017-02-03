@@ -1,0 +1,22 @@
+machine:
+  node:
+    version: 6.9.1
+  services:
+    - docker
+
+test:
+  override:
+    - ./node_modules/.bin/_mocha test --reporter mocha-circleci-reporter:
+        environment:
+          MOCHA_FILE: "$CIRCLE_TEST_REPORTS/junit/test-results.xml"
+  post:
+    - docker build --rm=false -t $EXTERNAL_REGISTRY_ENDPOINT/syslogd2kibana:$CIRCLE_BUILD_NUM .
+    - docker tag $EXTERNAL_REGISTRY_ENDPOINT/syslogd2kibana:$CIRCLE_BUILD_NUM $EXTERNAL_REGISTRY_ENDPOINT/syslogd2kibana:latest
+
+deployment:
+  prod:
+    branch: master
+    commands:
+      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+      - docker push $EXTERNAL_REGISTRY_ENDPOINT/syslogd2kibana:$CIRCLE_BUILD_NUM
+      - docker push $EXTERNAL_REGISTRY_ENDPOINT/syslogd2kibana:latest
